@@ -32,36 +32,35 @@
         <input
           type="number"
           id="quantity_available"
-          v-model="newProduct.quantity_available"
+          v-model.number="newProduct.quantity_available"
           placeholder="Quantity Available"
           min="0"
+          step="1"
+          required
         />
 
         <label for="price">Price</label>
         <input
           type="number"
           id="price"
-          v-model="newProduct.price"
+          v-model.number="newProduct.price"
           placeholder="Price"
           step="0.01"
           min="0"
+          required
         />
 
         <label for="category">Category</label>
         <select v-model="newProduct.category" id="category" required>
           <option value="" disabled>Select Category</option>
-          <option value="bed">Bed</option>
-          <option value="storage">Storage</option>
-          <option value="furniture">Furniture</option>
-          <option value="decorations">Decorations</option>
-          placeholder="Category"
+          <option v-for="category in categories" :key="category" :value="category">{{ categoryLabel(category) }}</option>
         </select>
 
         <div class="button_box">
           <button type="submit">Add Product</button>
           <button
-           
-            @click.prevent="deleteAllProducts"
+            type="button"
+            @click="deleteAllProducts"
             class="delete-all-button"
           >
             Delete All Products
@@ -84,13 +83,13 @@
             <p><strong>ID:</strong> {{ product.id }}</p>
             <p><strong>Product Name:</strong> {{ product.product_name }}</p>
             <p><strong>Description:</strong> {{ product.description }}</p>
-            <p><strong>Price:</strong> ${{ product.price }}</p>
+            <p><strong>Price:</strong> ${{ formatPrice(product.price) }}</p>
             <p><strong>Category:</strong> {{ product.category }}</p>
             <p><strong>Quantity Available:</strong> {{ product.quantity_available }}</p>
           </div>
 
           <div class="single_product_buttons_box" >
-            <button @click="deleteProduct(product.id)">Delete</button>
+            <button type="button" @click="deleteProduct(product.id)">Delete</button>
             <button @click="editProduct(product)">Edit</button>
           </div>
         </li>
@@ -130,28 +129,28 @@
         <input
           type="number"
           id="edit_quantity_available"
-          v-model="editingProduct.quantity_available"
+          v-model.number="editingProduct.quantity_available"
           placeholder="Quantity Available"
           min="0"
+          step="1"
+          required
         />
 
         <label for="edit_price">Price</label>
         <input
           type="number"
           id="edit_price"
-          v-model="editingProduct.price"
+          v-model.number="editingProduct.price"
           placeholder="Price"
           step="0.01"
           min="0"
+          required
         />
 
         <label for="edit_category">Category</label>
         <select v-model="editingProduct.category" id="edit_category" required>
-          <option value="bed">Bed</option>
-          <option value="storage">Storage</option>
-          <option value="furniture">Furniture</option>
-          <option value="decorations">Decorations</option>
-          placeholder="Category"
+          <option value="" disabled>Select Category</option>
+          <option v-for="category in categories" :key="category" :value="category">{{ categoryLabel(category) }}</option>
         </select>
 
         <button type="submit">Update Product</button>
@@ -162,55 +161,63 @@
 
 <script>
 import ProductService from "../services/ProductService";
+import { store, fetchProducts } from "../store";
+import { CATEGORIES, formatPrice } from "../utils";
+
+const emptyProduct = () => ({
+  product_name: "",
+  description: "",
+  img: "",
+  quantity_available: null,
+  price: null,
+  category: "",
+});
 
 export default {
   name: "ProductManagement",
   data() {
     return {
-      products: [],
-      newProduct: {
-        product_name: "",
-        description: "",
-        img: "",
-        quantity_available: null,
-        price: null,
-        category: "",
-      },
+      categories: CATEGORIES,
+      newProduct: emptyProduct(),
       editingProduct: null,
-      isAdmin: false,
     };
   },
+  computed: {
+    // Shared with the shop pages, so changes show up there without a reload
+    products() {
+      return store.products;
+    },
+  },
   methods: {
-    async fetchProducts() {
-      try {
-        this.products = await ProductService.getAllProducts();
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      }
+    formatPrice,
+    categoryLabel(category) {
+      return category === "Home" ? "Home (featured on home page)" : category;
     },
     async createProduct() {
       try {
         await ProductService.createProduct(this.newProduct);
         this.resetForm();
-        this.fetchProducts();
+        await fetchProducts();
       } catch (error) {
-        console.error("Error creating product:", error.response?.data || error.message);
+        alert(error.response?.data?.message || "Could not create the product.");
       }
     },
     async deleteProduct(id) {
+      if (!confirm("Delete this product?")) return;
       try {
         await ProductService.deleteProduct(id);
-        this.fetchProducts();
+        await fetchProducts();
       } catch (error) {
-        console.error("Error deleting product:", error.response?.data || error.message);
+        alert(error.response?.data?.message || "Could not delete the product.");
       }
     },
     async deleteAllProducts() {
+      if (!confirm("Delete ALL products? This cannot be undone.")) return;
       try {
         await ProductService.deleteAllProducts();
-        this.fetchProducts();
+        await fetchProducts();
       } catch (error) {
-        console.error("Error deleting all products:", error.response?.data || error.message);
+        alert(error.response?.data?.message || "Could not delete the products.");
       }
     },
     editProduct(product) {
@@ -220,26 +227,17 @@ export default {
       try {
         await ProductService.updateProduct(this.editingProduct.id, this.editingProduct);
         this.editingProduct = null;
-        this.fetchProducts();
+        await fetchProducts();
       } catch (error) {
-        console.error("Error updating product:", error.response?.data || error.message);
+        alert(error.response?.data?.message || "Could not update the product.");
       }
     },
     resetForm() {
-      this.newProduct = {
-        product_name: "",
-        description: "",
-        img: "",
-        quantity_available: null,
-        price: null,
-        category: "",
-      };
+      this.newProduct = emptyProduct();
     },
   },
   mounted() {
-    this.fetchProducts();
-    const role = localStorage.getItem("role");
-    this.isAdmin = role === "admin";
+    fetchProducts();
   },
 };
 </script>

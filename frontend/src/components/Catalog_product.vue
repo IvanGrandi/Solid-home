@@ -1,27 +1,29 @@
 <template>
   <div class="main_product_section">
-    
-    <ul class="list_products">
-      <li 
-        class="product" 
-        v-for="item in products" 
-        :key="item.id" 
-        v-show="item.category === Page_category"
-      >
-        <Product 
-          :product="item"
-          @product-clicked="viewProduct"
-        />
-        <button @click="add_product_to_cart(item)">Add to cart</button>
-      </li>
-    </ul>
-    <p  v-if="products.length===0">There are no products available</p>
-
+    <p v-if="!productsLoaded">Loading products...</p>
+    <template v-else>
+      <ul class="list_products">
+        <li
+          class="product"
+          v-for="item in products"
+          :key="item.id"
+        >
+          <Product
+            :product="item"
+            @product-clicked="viewProduct"
+          />
+          <button @click="addProduct(item)">Add to cart</button>
+        </li>
+      </ul>
+      <p v-if="products.length === 0">There are no products available</p>
+    </template>
   </div>
 </template>
 
 <script>
 import Product from './Product.vue';
+import { store, addToCart } from '../store';
+import { auth } from '../services/session';
 
 export default {
   name: "Catalog_product",
@@ -29,13 +31,23 @@ export default {
     Product,
   },
   props: {
-    add_product_to_cart: Function,
-    products: Array,
-    Page_category: String,
+    products: Array, // Already filtered by the parent page
+  },
+  computed: {
+    productsLoaded() {
+      return store.productsLoaded;
+    },
   },
   methods: {
     viewProduct(id) {
       this.$router.push(`/product/${id}`);
+    },
+    addProduct(item) {
+      if (!auth.session) {
+        this.$router.push("/login");
+        return;
+      }
+      addToCart(item);
     },
   },
 };

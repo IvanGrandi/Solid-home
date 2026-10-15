@@ -1,21 +1,18 @@
 <template>
     <div class="Searchable_Catalog">
-      <Search_bar 
-        @search="filterProducts" 
+      <Search_bar
+        @search="filterProducts"
         @reset_list="resetProductList"
       />
-      <Catalog_product 
-        :add_product_to_cart="add_product_to_cart" 
-        :products="filteredProducts" 
-        :Page_category="Page_category"
-      />
+      <Catalog_product :products="filteredProducts" />
     </div>
   </template>
   
   <script>
   import Catalog_product from "../components/Catalog_product.vue";
   import Search_bar from "../components/Search_bar.vue";
-  
+  import { store } from "../store";
+
   export default {
     name: "SearchableCatalog",
     components: {
@@ -23,33 +20,32 @@
       Search_bar,
     },
     props: {
-      add_product_to_cart: Function,
-      products: Array,
       Page_category: String,
     },
     data() {
       return {
         text_to_search: "",
-        filteredProducts: this.products.filter(item => item.category === this.Page_category),
       };
     },
-    methods: {
-      filterProducts(searchText) {
-        this.text_to_search = searchText.toLowerCase();
-        this.filteredProducts = this.products.filter(item => {
+    computed: {
+      // Computed rather than copied into data(), so it updates when the products finish loading
+      filteredProducts() {
+        return store.products.filter(item => {
           return (
-            (!this.text_to_search || 
-            item.product_name.toLowerCase().includes(this.text_to_search) || 
-            item.description.toLowerCase().includes(this.text_to_search)) &&
-            item.category === this.Page_category
+            item.category === this.Page_category &&
+            (!this.text_to_search ||
+              item.product_name.toLowerCase().includes(this.text_to_search) ||
+              (item.description || "").toLowerCase().includes(this.text_to_search))
           );
         });
       },
+    },
+    methods: {
+      filterProducts(searchText) {
+        this.text_to_search = searchText.trim().toLowerCase();
+      },
       resetProductList() {
         this.text_to_search = "";
-        this.filteredProducts = this.products.filter(
-          item => item.category === this.Page_category
-        );
       },
     },
   };

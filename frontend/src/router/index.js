@@ -1,17 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Home from "../views/Home.vue"; 
-import Beds from '../views/Beds.vue';
-import Decoration from '../views/Decoration.vue';
-import Furniture from '../views/Furniture.vue';
-import Storage from '../views/Storage.vue';
-import Cart from '../views/Cart.vue';
-import Individual_product from '../views/Individual_product.vue';
-import Registry from "../views/Registry.vue";
-import Login from "../views/Login.vue";
-import ProductManagement from "../views/ProductManagement.vue";
-import UserManagement from "../views/UserManagement.vue";
+import Home from "../views/Home.vue";
+import { refreshSession } from "../services/session";
 
-const routes = [ 
+// Every page except Home is loaded on demand, so the first visit downloads less JavaScript
+const routes = [
     {
         path: "/",
         name : "Home",
@@ -20,60 +12,60 @@ const routes = [
     {
         path: "/beds",
         name : "Beds",
-        component: Beds ,
+        component: () => import('../views/Beds.vue'),
     },
     {
         path: "/decoration",
         name : "Decoration",
-        component: Decoration ,
+        component: () => import('../views/Decoration.vue'),
     },
     {
         path: "/furniture",
         name : "Furniture",
-        component: Furniture ,
+        component: () => import('../views/Furniture.vue'),
     },
     {
         path: "/storage",
         name : "Storage",
-        component: Storage ,
+        component: () => import('../views/Storage.vue'),
     },
     {
         path: "/cart",
         name : "Cart",
-        component: Cart ,
-        meta: { requiresAuth: true }, 
+        component: () => import('../views/Cart.vue'),
+        meta: { requiresAuth: true },
     },
     {
-        path: "/product/:id", 
+        path: "/product/:id",
         name: "Individual_product",
-        component: Individual_product,
+        component: () => import('../views/Individual_product.vue'),
         props: true,
       },
       {
         path: "/register",
         name: "Register",
-        component: Registry,
+        component: () => import("../views/Registry.vue"),
         meta: { guest: true }, // Mark as accessible to guests only
       },
       {
         path: "/login",
         name: "Login",
-        component: Login,
+        component: () => import("../views/Login.vue"),
         meta: { guest: true }, // Mark as accessible to guests only
       },
       {
         path: "/products",
         name: "ProductManagement",
-        component: ProductManagement,
+        component: () => import("../views/ProductManagement.vue"),
         meta: { requiresAuth: true, role: "admin" }, // Restricted to admin
       },
       {
         path: "/users",
         name: "UserManagement",
-        component: UserManagement,
+        component: () => import("../views/UserManagement.vue"),
         meta: { requiresAuth: true, role: "admin" }, // Restricted to admin
       },
-      
+
 ]
 
 const router = createRouter({
@@ -84,45 +76,27 @@ const router = createRouter({
   }
 });
 
-// Route Guards
-router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem("user");
-
-  let user = null;
-  if (token) {
-    try {
-      user = JSON.parse(atob(token.split(".")[1])); // Decode the token to extract user data
-    } catch (error) {
-      console.error("Invalid token:", error);
-      localStorage.removeItem("user");
-      return next("/login"); // Redirect to login if token is invalid
-    }
-  }
+// Route Guards (UX only - the API enforces the same rules on the server)
+router.beforeEach((to) => {
+  const session = refreshSession(); // Also drops an expired or malformed token
 
   // If route requires authentication
   if (to.matched.some((record) => record.meta.requiresAuth)) {
-    if (!token) {
-      return next("/login"); // Redirect to login if not authenticated
+    if (!session) {
+      return "/login"; // Redirect to login if not authenticated
     }
-
-    if (to.meta.role && user && user.roles) {
-      const hasRole = user.roles.includes(to.meta.role);
-      if (!hasRole) {
-        return next("/"); // Redirect to home if the user lacks the required role
-      }
+    if (to.meta.role && !session.roles.includes(to.meta.role)) {
+      return "/"; // Redirect to home if the user lacks the required role
     }
-    return next();
+    return true;
   }
 
   // If route is for guests only
-  if (to.matched.some((record) => record.meta.guest)) {
-    if (token) {
-      return next("/"); // Redirect to home if already authenticated
-    }
-    return next();
+  if (to.matched.some((record) => record.meta.guest) && session) {
+    return "/"; // Redirect to home if already authenticated
   }
 
-  next(); // Allow navigation if no guard is triggered
+  return true; // Allow navigation if no guard is triggered
 });
 
 export default router;

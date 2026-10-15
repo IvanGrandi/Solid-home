@@ -7,6 +7,8 @@
         type="text"
         placeholder="Username"
         class="auth-input"
+        minlength="3"
+        maxlength="30"
         required
       />
       <input
@@ -21,6 +23,8 @@
         type="password"
         placeholder="Password"
         class="auth-input"
+        minlength="8"
+        maxlength="72"
         required
       />
       <button type="submit" class="auth-button">Register</button>
@@ -42,7 +46,7 @@ export default {
   methods: {
     async registerUser() {
       try {
-        const response = await apiClient.post("/auth/register", {
+        await apiClient.post("/auth/register", {
           username: this.username,
           email: this.email,
           password: this.password,

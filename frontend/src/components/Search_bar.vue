@@ -11,29 +11,22 @@
 </template>
 
 <script>
-  
+
   export default {
     name: "SearchBar",
-    props: {
-      products: Array,
-    },
+    emits: ["search", "reset_list"],
     data(){
       return{
         search_text:"",
-        saved_search_text:"",
       }
     },
     methods:{
         emit_search(){
-            this.saved_search_text = this.search_text;
-            this.$emit("search", this.saved_search_text)
-           
-            this.saved_search_text = ""
+            this.$emit("search", this.search_text)
         },
         reset_product_list(){
             this.search_text = "";
             this.$emit("reset_list")
-
         }
     }
   };

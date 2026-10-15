@@ -39,26 +39,23 @@
 
     </div>
     <h2 class="Home_catalog">Explore our catalog</h2>
-    <Catalog_product :add_product_to_cart="add_product_to_cart" :products="products" :Page_category="Page_category" />
+    <Catalog_product :products="homeProducts" />
   </template>
   
 <script>
   import Catalog_product from "../components/Catalog_product.vue";
-  
+  import { store } from "../store";
+
   export default {
     name: "Home",
     components: {
       Catalog_product,
     },
-    props: {
-      add_product_to_cart: Function,
-      products: Array,
+    computed: {
+      homeProducts() {
+        return store.products.filter((item) => item.category === "Home");
+      },
     },
-    data(){
-      return{
-        Page_category:"Home",
-      }
-    }
   };
 </script>
 

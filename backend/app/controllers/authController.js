@@ -5,77 +5,75 @@ const config = require("../config/auth.config");
 const User = db.user;
 const Role = db.role;
 
+// Compared against when the username doesn't exist, so an unknown user takes as long as a wrong password
+const DUMMY_HASH = bcrypt.hashSync("timing-equalizer", config.saltRounds);
 
-exports.register = (req, res) => {
-  console.log("Request Body for Registration:", req.body); // Debug log
-  User.create({
-    username: req.body.username,
-    email: req.body.email,
-    password: bcrypt.hashSync(req.body.password, 8), // Hash the password
-  })
-    .then((user) => {
-      if (req.body.roles) {
-        Role.findAll({
-          where: { name: req.body.roles },
-        }).then((roles) => {
-          user.setRoles(roles).then(() => {
-            res.send({ message: "User registered successfully!" });
-          });
-        });
-      } else {
-        // Default to role "user" (id 1)
-        user.setRoles([1]).then(() => {
-          res.send({ message: "User registered successfully!" });
-        });
-      }
-    })
-    .catch((err) => {
-      console.error("Error during registration:", err.message); // Debug log
-      res.status(500).send({ message: err.message });
+exports.register = async (req, res) => {
+  try {
+    const user = await User.create({
+      username: req.body.username,
+      email: req.body.email,
+      password: await bcrypt.hash(req.body.password, config.saltRounds),
     });
+
+    // Public sign-up always gets the "user" role; admins are created with `npm run db:setup`
+    const userRole = await Role.findOne({ where: { name: "user" } });
+    await user.setRoles([userRole]);
+
+    res.status(201).send({ message: "User registered successfully!" });
+  } catch (err) {
+    console.error("Error during registration:", err.message);
+    res.status(500).send({ message: "Registration failed." });
+  }
 };
 
 exports.signin = async (req, res) => {
   try {
-    console.log("Request Body for Login:", req.body); // Debug log
-
-    // Find user by username
-    const user = await User.findOne({ where: { username: req.body.username } });
-
-    if (!user) {
-      return res.status(404).send({ message: "User not found." });
+    const { username, password } = req.body;
+    if (typeof username !== "string" || typeof password !== "string") {
+      return res.status(400).send({ message: "Username and password are required." });
     }
 
-    // Validate password
-    const passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
+    const user = await User.findOne({ where: { username } });
+    const passwordIsValid = await bcrypt.compare(password, user ? user.password : DUMMY_HASH);
 
-    if (!passwordIsValid) {
+    // Same response for unknown user and wrong password, so usernames can't be enumerated
+    if (!user || !passwordIsValid) {
       return res.status(401).send({
         accessToken: null,
-        message: "Invalid password!",
+        message: "Invalid username or password.",
       });
     }
 
-    // Fetch roles
-    const roles = await user.getRoles();
-    const authorities = roles.map((role) => role.name); // Extract role names
+    if (user.blocked) {
+      return res.status(403).send({
+        accessToken: null,
+        message: "Your account has been blocked by an administrator.",
+      });
+    }
 
-    // Generate token with roles in the payload
-    const token = jwt.sign(
-      { id: user.id, roles: authorities }, // Include roles in the payload
-      config.secret,
-      { expiresIn: 86400 } // 24 hours
-    );
+    // Transparently upgrade hashes created with the old, weaker cost factor
+    if (bcrypt.getRounds(user.password) < config.saltRounds) {
+      user.password = await bcrypt.hash(password, config.saltRounds);
+      await user.save();
+    }
+
+    const roles = await user.getRoles();
+    const authorities = roles.map((role) => role.name);
+
+    const token = jwt.sign({ id: user.id, roles: authorities }, config.secret, {
+      expiresIn: config.expiresIn,
+    });
 
     res.status(200).send({
       id: user.id,
       username: user.username,
       email: user.email,
-      roles: authorities, // All roles
+      roles: authorities,
       accessToken: token,
     });
   } catch (err) {
     console.error("Error during login:", err.message);
-    res.status(500).send({ message: err.message });
+    res.status(500).send({ message: "Login failed." });
   }
 };

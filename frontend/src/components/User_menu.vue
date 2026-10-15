@@ -27,10 +27,10 @@
           </div>
         </router-link>
         <div class="items_menu">
-          {{ number_Cart_Items }} <p>Items</p>
+          {{ cartCount }} <p>Items</p>
         </div>
         <div class="items_menu">
-          {{ totalPrice }}$ <p>Total Amount</p>
+          {{ cartTotal }}$ <p>Total Amount</p>
         </div>
       </template>
 
@@ -53,46 +53,28 @@
 </template>
 
 <script>
+import { auth, clearSession } from "../services/session";
+import { cartCount, cartTotal, clearCart } from "../store";
+import { formatPrice } from "../utils";
+
 export default {
   name: "User_menu",
-  props: {
-    number_Cart_Items: {
-      type: Number,
-      default: 0,
+  computed: {
+    role() {
+      if (!auth.session) return "guest";
+      return auth.session.roles.includes("admin") ? "admin" : "user";
     },
-    totalPrice: {
-      type: Number,
-      default: 0.0,
+    userName() {
+      return auth.session ? auth.session.username : "";
+    },
+    cartCount() {
+      return cartCount.value;
+    },
+    cartTotal() {
+      return formatPrice(cartTotal.value);
     },
   },
-  data() {
-  const token = localStorage.getItem("user");
-  let role = "guest";
-  let blocked = false;
-  let userName = "";
-
-  if (token) {
-    try {
-      const user = JSON.parse(atob(token.split(".")[1])); // Decode the token
-      console.log("Decoded token:", user); // Debug log
-      blocked = user.blocked || false; // Check if the user is blocked
-      role = blocked ? "guest" : user.roles.includes("admin") ? "admin" : "user";
-      userName = localStorage.getItem("userName") || "";
-    } catch (error) {
-      console.error("Error decoding token:", error);
-      localStorage.removeItem("user");
-    }
-  }
-
-  return {
-    role: role, // Set the role based on the token
-    userName: localStorage.getItem("userName") || "", // Get username from localStorage
-  };
-},
   methods: {
-    giverole() {
-      console.log("Primary role:", this.role);
-    },
     goToLogin() {
       this.$router.push("/login"); // Navigate to Login page
     },
@@ -100,13 +82,9 @@ export default {
       this.$router.push("/register"); // Navigate to Register page
     },
     logout() {
-      localStorage.removeItem("user"); // Remove user data
-      localStorage.removeItem("role");
-      localStorage.removeItem("userName");
-      this.role = "guest"; // Reset role to guest
-      this.userName = ""; // Clear user name
+      clearSession(); // The menu updates reactively, no page reload needed
+      clearCart();
       this.$router.push("/"); // Redirect to Home
-      location.reload(); // Reload the page for immediate UI update
     },
   },
 };

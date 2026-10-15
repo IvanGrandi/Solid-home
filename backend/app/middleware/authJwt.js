@@ -2,55 +2,53 @@ const jwt = require("jsonwebtoken");
 const config = require("../config/auth.config.js");
 const db = require("../models/index.js");
 const User = db.user;
+const Role = db.role;
 
-// Verify if the token is provided and valid
-const verifyToken = (req, res, next) => {
-  // Retrieve token from headers
-  let token = req.headers["x-access-token"]; // Alternative: req.headers["authorization"]
+// Verify the token, and that its user still exists and isn't blocked
+const verifyToken = async (req, res, next) => {
+  const token = req.headers["x-access-token"];
 
   if (!token) {
-    return res.status(403).send({
-      message: "No token provided!",
-    });
+    return res.status(401).send({ message: "No token provided!" });
   }
 
-  jwt.verify(token, config.secret, (err, decoded) => {
-    if (err) {
-      return res.status(401).send({
-        message: "Unauthorized!",
-      });
+  let decoded;
+  try {
+    decoded = jwt.verify(token, config.secret);
+  } catch (err) {
+    return res.status(401).send({ message: "Unauthorized!" });
+  }
+
+  try {
+    // Roles are loaded from the DB rather than trusted from the token, so changes apply immediately
+    const user = await User.findByPk(decoded.id, {
+      attributes: ["id", "blocked"],
+      include: [{ model: Role, attributes: ["name"], through: { attributes: [] } }],
+    });
+
+    if (!user) {
+      return res.status(401).send({ message: "Unauthorized!" });
+    }
+    if (user.blocked) {
+      return res.status(403).send({ message: "Your account has been blocked by an administrator." });
     }
 
-    req.userId = decoded.id; // Save user ID from the token payload
-    next(); // Proceed to the next middleware
-  });
+    req.userId = user.id;
+    req.userRoles = user.roles.map((role) => role.name);
+    next();
+  } catch (err) {
+    res.status(500).send({ message: err.message });
+  }
 };
 
-// Verify if the user has an "admin" role
+// Verify if the user has an "admin" role (must run after verifyToken)
 const isAdmin = (req, res, next) => {
-  User.findByPk(req.userId)
-    .then((user) => {
-      user.getRoles().then((roles) => {
-        for (let i = 0; i < roles.length; i++) {
-          if (roles[i].name === "admin") {
-            next(); // User is admin; proceed to the next middleware
-            return;
-          }
-        }
-
-        // If no admin role is found, send a forbidden response
-        res.status(403).send({
-          message: "Require Admin Role!",
-        });
-        return;
-      });
-    })
-    .catch((err) => {
-      res.status(500).send({ message: err.message });
-    });
+  if (req.userRoles && req.userRoles.includes("admin")) {
+    return next();
+  }
+  res.status(403).send({ message: "Require Admin Role!" });
 };
 
-// Export the middleware functions
 const authJwt = {
   verifyToken,
   isAdmin,

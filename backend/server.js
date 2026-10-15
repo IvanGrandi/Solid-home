@@ -1,21 +1,32 @@
 require('mysql2');
 const express = require("express");
 const cors = require("cors");
-const db = require("./app/models"); // Import models
-const Role = db.role; // Access the Role model
+require("./app/config/auth.config"); // Fails fast if JWT_SECRET is missing
 
 // Import routes
-const authRoutes = require("./app/routes/authRoutes"); 
+const authRoutes = require("./app/routes/authRoutes");
 const productRoutes = require("./app/routes/productRoutes");
 const userRoutes = require("./app/routes/userRoutes"); // Import user routes
 
-// Import the seedAdmin function
-const seedAdmin = require("./seedAdmin");
+const setupDb = require("./setupDb");
 
 const app = express();
 
+// Vercel sits behind a proxy; trust it so the rate limiter sees the real client IP
+if (process.env.VERCEL) {
+  app.set("trust proxy", 1);
+}
+
+// Only the known frontends may call the API from a browser (override with CORS_ORIGINS, comma-separated)
+const allowedOrigins = (
+  process.env.CORS_ORIGINS ||
+  "http://localhost:5173,http://localhost:4173,https://solid-home-nu.vercel.app"
+)
+  .split(",")
+  .map((origin) => origin.trim());
+
 // Middleware
-app.use(cors());
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -24,37 +35,12 @@ app.use("/auth", authRoutes); // Routes for authentication
 app.use("/api/products", productRoutes); // Product routes (adjusted path)
 app.use("/api/users", userRoutes); // Use the routes with the base path "/api/users"
 
-// Define the initial function to seed roles
-async function initial() {
-  try {
-    // Check if roles exist
-    const roleCount = await Role.count();
-    if (roleCount === 0) {
-      // Seed roles if none exist
-      await Role.bulkCreate([
-        { id: 1, name: "user" },
-        { id: 2, name: "admin" },
-      ]);
-      console.log("Roles seeded successfully!");
-    } else {
-      console.log("Roles already exist. Skipping seeding.");
-    }
-  } catch (error) {
-    console.error("Error seeding roles:", error.message);
-  }
-}
-
-// Test database connection and sync tables
-db.sequelize
-  .sync({ force: false }) // Use `force: true` only for resetting the database during development
-  .then(() => {
-    console.log("Database synchronized successfully!");
-    initial(); // Seed roles after syncing database
-    seedAdmin();
-  })
-  .catch((err) => {
-    console.error("Error syncing database:", err.message);
+// Sync tables and seed on local runs only; on Vercel this would slow every cold start
+if (!process.env.VERCEL) {
+  setupDb().catch((err) => {
+    console.error("Error setting up database:", err.message);
   });
+}
 
 // Test server route
 app.get("/", (req, res) => {

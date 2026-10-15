@@ -8,19 +8,21 @@
             <div class="button_container">
                 <div class="add_reduce_container">
                     <button @click="$emit('reduce_cart')">-</button>
-                    <p>{{ product.quantity_cart }}</p>
+                    <p>{{ quantity }}</p>
                     <button @click="$emit('update-cart')">+</button>
                 </div>
                 <button class="remove_product" @click="$emit('remove-product')">Remove from the cart</button>
             </div>
         </div>
         <div>
-            <h2>Price: {{ product.price * product.quantity_cart }} $</h2>
+            <h2>Price: {{ formatPrice(product.price * quantity) }} $</h2>
         </div>
     </div>
 </template>
 
 <script>
+import { formatPrice } from "../utils";
+
 export default {
     name: "Cart_product",
     props: {
@@ -28,8 +30,14 @@ export default {
             type: Object,
             required: true,
         },
+        quantity: {
+            type: Number,
+            required: true,
+        },
     },
+    emits: ["reduce_cart", "update-cart", "remove-product", "product-clicked"],
     methods: {
+        formatPrice,
         handleClick() {
             this.$emit("product-clicked", this.product.id);
         },

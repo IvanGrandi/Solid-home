@@ -1,6 +1,6 @@
 <template>
   <div class="product_details_page">
-    <div v-if="!product">Loading product details...</div>
+    <div v-if="!product">{{ productsLoaded ? "Product not found." : "Loading product details..." }}</div>
     <div v-else class="product_container">
       <img :src="product.img" alt="Product Image" />
       <div class="product_details">
@@ -10,32 +10,37 @@
 
         <div class="rating_section">
           <h3>Rating: {{ averageRating }} / 5</h3>
-          <div v-if="product.ratings.length">
-            <span v-for="n in 5" :key="n" class="star" :class="{ filled: n <= averageRating }">&#9733;</span>
+          <div v-if="ratings.length">
+            <span v-for="n in 5" :key="n" class="star" :class="{ filled: n <= Math.round(averageRating) }">&#9733;</span>
           </div>
           <div v-else>No ratings yet.</div>
         </div>
 
-        <h2>Price: {{ product.price }} $</h2>
+        <h2>Price: {{ formatPrice(product.price) }} $</h2>
         <p class="description">Description:</p>
         <p>{{ product.description }}</p>
-        
+
         <div v-if="isLoggedIn" class="add_rating">
           <label for="rating">Rate this product:</label>
           <select v-model="userRating" id="rating">
             <option value="" disabled>Select rating</option>
             <option v-for="n in 5" :key="n" :value="n">{{ n }}</option>
           </select>
-          <button @click="submitRating">Submit</button>
+          <button @click="submitRating" :disabled="submitting">Submit</button>
         </div>
 
-        <button @click="addToCart">Add to Cart</button>
+        <button @click="addProductToCart">Add to Cart</button>
       </div>
     </div>
   </div>
 </template>
   
 <script>
+import ProductService from "../services/ProductService";
+import { store, findProduct, addToCart } from "../store";
+import { auth } from "../services/session";
+import { formatPrice } from "../utils";
+
 export default {
   name: "IndividualProduct",
   props: {
@@ -46,71 +51,53 @@ export default {
   },
   data() {
     return {
-      product: null,
-      userRating: null, // To store the user's selected rating
+      userRating: "", // To store the user's selected rating
+      submitting: false,
     };
   },
   computed: {
+    productsLoaded() {
+      return store.productsLoaded;
+    },
+    product() {
+      return findProduct(this.id) || null;
+    },
+    ratings() {
+      return (this.product && this.product.ratings) || [];
+    },
     isLoggedIn() {
-      return !!localStorage.getItem("user");
+      return Boolean(auth.session);
     },
     averageRating() {
-      if (this.product && this.product.ratings.length) {
-        const total = this.product.ratings.reduce((sum, rating) => sum + rating, 0);
-        return (total / this.product.ratings.length).toFixed(1);
-      }
-      return 0;
+      if (!this.ratings.length) return 0;
+      const total = this.ratings.reduce((sum, rating) => sum + rating, 0);
+      return Number((total / this.ratings.length).toFixed(1));
     },
-  },
-  created() {
-    this.fetchProductOnLoad();
   },
   methods: {
-    async fetchProductOnLoad() {
-      const productId = parseInt(this.id, 10);
-      if (this.$root.products.length) {
-        this.fetchProduct(productId);
+    formatPrice,
+    addProductToCart() {
+      if (!auth.session) {
+        this.$router.push("/login");
+        return;
       }
+      addToCart(this.product);
     },
-    async fetchProduct(productId) {
-      const product = this.$root.products?.find((item) => item.id === productId);
-      if (product) {
-        // Ensure product has a ratings array
-        if (!product.ratings) {
-          product.ratings = [];
-        }
-        this.product = product;
-      } else {
-        console.error("Product not found");
-      }
-    },
-    addToCart() {
-      this.$root.add_product_to_cart(this.product);
-    },
-    submitRating() {
+    async submitRating() {
       if (!this.userRating) {
         alert("Please select a rating before submitting.");
         return;
       }
-      if (this.product) {
-        this.product.ratings.push(parseInt(this.userRating, 10));
-        this.userRating = null; // Reset user rating after submission
+      this.submitting = true;
+      try {
+        const updated = await ProductService.addRating(this.product.id, Number(this.userRating));
+        this.product.ratings = updated.ratings; // Use the saved ratings from the server
+        this.userRating = ""; // Reset user rating after submission
+      } catch (error) {
+        alert(error.response?.data?.message || "Could not submit your rating.");
+      } finally {
+        this.submitting = false;
       }
-    },
-  },
-  watch: {
-    '$root.products': {
-      immediate: true,
-      handler(newProducts) {
-        if (newProducts.length && !this.product) {
-          const productId = parseInt(this.id, 10);
-          this.fetchProduct(productId);
-        }
-      },
-    },
-    id(newId) {
-      const productId = parseInt(newId, 10);
-      this.fetchProduct(productId);
     },
   },
 };

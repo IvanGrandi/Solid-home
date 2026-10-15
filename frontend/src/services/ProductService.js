@@ -27,7 +27,6 @@ const getProductById = async (id) => {
 // Create a new product (Admin Only)
 const createProduct = async (product) => {
   try {
-    console.log("Sending product data:", product); // Debugging log
     const response = await apiClient.post(API_URL, product);
     return response.data;
   } catch (error) {
@@ -69,7 +68,7 @@ const deleteAllProducts = async () => {
   }
 };
 
-// Add a rating to a product (Public)
+// Add a rating to a product (Logged-in users)
 const addRating = async (id, rating) => {
   try {
     const response = await apiClient.post(`${API_URL}/${id}/rating`, { rating });

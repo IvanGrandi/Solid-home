@@ -23,6 +23,7 @@
 
 <script>
 import apiClient from "../services/apiService";
+import { saveSession } from "../services/session";
 
 export default {
   data() {
@@ -39,23 +40,12 @@ export default {
           password: this.password,
         });
 
-        const { accessToken, role, username, blocked } = response.data;
-        if (blocked) {
-          alert(`${username}, your account has been blocked by the admin.`);
-          // Treat as a guest, even after logging in
-          localStorage.setItem("role", "guest");
-        } else {
-            // Store user details in localStorage
-            localStorage.setItem("user", accessToken);
-            localStorage.setItem("role", role); // Set role dynamically
-            localStorage.setItem("userName", username);
-
+        // Blocked accounts are rejected by the server with a 403 and end up in the catch below
+        const { accessToken, username } = response.data;
+        saveSession(accessToken, username); // The menu updates reactively, no page reload needed
         alert("Login successful!");
-        }
-        location.reload(); // Reload the page to reflect role-based UI changes
         this.$router.push("/"); // Redirect to home page
       } catch (error) {
-        console.error("Login failed:", error.response?.data?.message || error.message);
         alert(error.response?.data?.message || "Login failed!");
       }
     },

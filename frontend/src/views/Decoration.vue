@@ -6,8 +6,6 @@
     </div>
       
       <SearchableCatalog
-        :add_product_to_cart="add_product_to_cart"
-        :products="products"
         :Page_category="Page_category"
       />
     </div>
@@ -20,10 +18,6 @@
     name: "Decoration",
     components: {
       SearchableCatalog,
-    },
-    props: {
-      add_product_to_cart: Function,
-      products: Array,
     },
     data() {
       return {

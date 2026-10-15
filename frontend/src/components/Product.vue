@@ -1,12 +1,14 @@
 <template>
-    
+
       <img :src="product.img" alt="product" @click="handleClick" />
       <h4 @click="handleClick">{{ product.product_name }}</h4>
-      <h2>Price: {{ product.price }} $</h2>
-   
+      <h2>Price: {{ formatPrice(product.price) }} $</h2>
+
   </template>
   
   <script>
+  import { formatPrice } from "../utils";
+
   export default {
     name: "Product",
     props: {
@@ -17,6 +19,7 @@
     },
     emits: ["product-clicked"],
     methods: {
+      formatPrice,
       handleClick() {
         this.$emit("product-clicked", this.product.id);
       },

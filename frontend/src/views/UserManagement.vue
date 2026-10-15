@@ -26,7 +26,8 @@ export default {
     // Filter out admin users
     nonAdminUsers() {
       return this.users.filter((user) => {
-        return user.roles && !user.roles.includes("admin");
+        // Roles come from the API as objects: [{ name: "admin" }]
+        return !(user.roles || []).some((role) => role.name === "admin");
       });
     },
   },

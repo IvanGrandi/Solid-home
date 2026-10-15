@@ -2,28 +2,16 @@ const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/authController");
 const verifySignUp = require("../middleware/verifySignUp");
+const { loginLimiter, registerLimiter } = require("../middleware/rateLimit");
 
 // Registration route with middleware
 router.post(
   "/register",
-  [verifySignUp.checkDuplicateUsernameOrEmail, verifySignUp.checkRolesExisted],
+  [registerLimiter, verifySignUp.validateRegistration, verifySignUp.checkDuplicateUsernameOrEmail],
   authController.register
 );
 
 // Login route
-router.post("/login", authController.signin);
-
-router.delete("/users", (req, res) => {
-  User.destroy({
-    where: {}, // Deletes all rows
-    truncate: true, // Optional: Resets primary key auto-increment
-  })
-    .then(() => {
-      res.send({ message: "All users were deleted successfully!" });
-    })
-    .catch((err) => {
-      res.status(500).send({ message: "Error deleting all users." });
-    });
-});
+router.post("/login", loginLimiter, authController.signin);
 
 module.exports = router;

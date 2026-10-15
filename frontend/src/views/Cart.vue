@@ -1,42 +1,54 @@
 <template>
   <div class="cart_container">
-    <h2>{{ cart_products.length === 0 ? 'Your cart is empty' : 'This is your cart' }}</h2>
+    <h2>{{ !productsLoaded ? 'Loading your cart...' : items.length === 0 ? 'Your cart is empty' : 'This is your cart' }}</h2>
     <ul>
-      <li class="car_product_container" v-for="item in cart_products" :key="item.id">
-        <Cart_product 
-          :product="item" 
-          @update-cart="() => add_product_to_cart(item)"
-          @reduce_cart="()=> remove_one_unit_cart_product(item)"
-          @remove-product="remove_cart_product(item)"
-          @product-clicked="viewProduct" 
+      <li class="car_product_container" v-for="item in items" :key="item.product.id">
+        <Cart_product
+          :product="item.product"
+          :quantity="item.quantity"
+          @update-cart="addToCart(item.product)"
+          @reduce_cart="removeOneFromCart(item.product.id)"
+          @remove-product="removeFromCart(item.product.id)"
+          @product-clicked="viewProduct"
         />
       </li>
     </ul>
-    <div class="total" v-if="cart_products.length !== 0">
-      <p>Total to pay : {{ totalPrice }}$ ({{number_Cart_Items}} products)</p>
+    <div class="total" v-if="items.length !== 0">
+      <p>Total to pay : {{ total }}$ ({{ count }} products)</p>
     </div>
   </div>
 </template>
 
 <script>
 import Cart_product from '../components/Cart_product.vue';
+import { store, cartItems, cartCount, cartTotal, addToCart, removeOneFromCart, removeFromCart } from '../store';
+import { formatPrice } from '../utils';
 
 export default {
-  props: {
-    cart_products: Array,
-    add_product_to_cart: Function,
-    remove_one_unit_cart_product: Function,
-    remove_cart_product: Function,
-    totalPrice: Number,
-    number_Cart_Items: Number,
-  },
   components: {
     Cart_product
   },
+  computed: {
+    productsLoaded() {
+      return store.productsLoaded;
+    },
+    items() {
+      return cartItems.value;
+    },
+    count() {
+      return cartCount.value;
+    },
+    total() {
+      return formatPrice(cartTotal.value);
+    },
+  },
   methods: {
-      viewProduct(id) {
-        this.$router.push(`/product/${id}`);
-      },
+    addToCart,
+    removeOneFromCart,
+    removeFromCart,
+    viewProduct(id) {
+      this.$router.push(`/product/${id}`);
+    },
   },
 };
 </script>

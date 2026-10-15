@@ -1,13 +1,22 @@
 const bcrypt = require("bcryptjs");
-const db = require("./app/models"); ;
+const { Op } = require("sequelize");
+const db = require("./app/models");
+const config = require("./app/config/auth.config");
 const Role = db.role;
 const User = db.user;
 
+// Admin credentials come from the environment so they are never committed to the repo
 async function seedAdmin() {
+  const { ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_PASSWORD } = process.env;
+
+  if (!ADMIN_USERNAME || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    console.log("ADMIN_USERNAME / ADMIN_EMAIL / ADMIN_PASSWORD not set. Skipping admin creation.");
+    return;
+  }
+
   try {
-    // Check if admin user already exists
     const existingAdmin = await User.findOne({
-      where: { email: "admin@example1.com" },
+      where: { [Op.or]: [{ username: ADMIN_USERNAME }, { email: ADMIN_EMAIL }] },
     });
 
     if (existingAdmin) {
@@ -15,22 +24,18 @@ async function seedAdmin() {
       return;
     }
 
-    // Create admin user
-    const admin = await User.create({
-      username: "testadmin",
-      email: "admin@example1.com",
-      password: bcrypt.hashSync("admin123", 8), // Hash the password
-    });
-
-    // Find admin role
     const adminRole = await Role.findOne({ where: { name: "admin" } });
-
     if (!adminRole) {
       console.log("Admin role does not exist. Please create roles first.");
       return;
     }
 
-    // Assign admin role to the user
+    const admin = await User.create({
+      username: ADMIN_USERNAME,
+      email: ADMIN_EMAIL,
+      password: await bcrypt.hash(ADMIN_PASSWORD, config.saltRounds),
+    });
+
     await admin.setRoles([adminRole]);
     console.log("Admin user created successfully!");
   } catch (err) {
