@@ -1,6 +1,8 @@
 <template>
     <User_menu />
-    <router-view />
+    <main class="page_content">
+      <router-view />
+    </main>
     <Footer_User />
     <Toast_container />
   </template>
@@ -41,5 +43,20 @@ html{
 
 body{
     width: 100%;
+}
+
+img{
+    max-width: 100%;
+}
+
+/* Keep the footer at the bottom of the screen on short pages */
+#app{
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.page_content{
+    flex: 1 0 auto;
 }
 </style>

@@ -60,6 +60,7 @@ export default {
     width: 100%;
     max-width: 500px;
     margin: 50px auto;
+    padding: 0 16px;
     text-align: center;
     font-family: "Montserrat", sans-serif;
   }

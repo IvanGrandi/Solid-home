@@ -81,7 +81,7 @@ export default {
 
 @media (max-width: 800px) {
   .toast_container {
-    top: 115px; /* The menu is taller on small screens */
+    top: 70px; /* Below the compact mobile menu bar */
     right: 50%;
     transform: translateX(50%);
   }

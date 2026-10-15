@@ -72,13 +72,16 @@ footer{
     justify-content: center;
     align-items: center;
     gap:40px;
+    padding: 20px 16px;
     color: white;
+    text-align: center;
 }
 .pages_footer{
     display: flex;
+    flex-wrap: wrap;
     font-size: larger;
     justify-content: center;
-    gap: 20px;
+    gap: 12px 20px;
 }
 
 .socials{
@@ -126,16 +129,17 @@ footer{
         align-items: center;
         
     }
-    .socials{
-        margin-bottom: 60px;
-    }
     .register_login{
-        margin: 30px;
+        margin: 30px 0 0;
         width: 100%;
-        padding: 0;
+        padding: 0 16px;
     }
     .menu_and_socials{
         width: 100%;
+        gap: 24px;
+    }
+    .socials{
+        margin-bottom: 30px;
     }
 }
 </style>

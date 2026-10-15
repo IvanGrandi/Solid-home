@@ -60,15 +60,20 @@ export default {
     .cart_product img{
         width: 200px;
         height: 200px;
+        flex-shrink: 0;
+        object-fit: contain;
         border: 1px solid gray;
     }
     .product_details{
         display: flex;
         flex-direction: column;
         gap:10px;
-        width: 50%;
-        height: 50%;
+        flex: 1;
+        min-width: 0;
+    }
 
+    .cart_product > div:last-child h2{
+        white-space: nowrap;
     }
 
     .product_details h2{
@@ -133,6 +138,19 @@ export default {
             flex-direction: column;
             align-items: center;
             gap: 10px;
+            text-align: center;
+        }
+
+        .cart_product img{
+            width: 100%;
+            max-width: 260px;
+            height: auto;
+            aspect-ratio: 1;
+        }
+
+        .product_details{
+            width: 100%;
+            align-items: center;
         }
 
         .add_reduce_container{
@@ -141,11 +159,11 @@ export default {
 
         
         .remove_product{
-            font-size: 10px;
-            padding: 10px;
+            font-size: 14px;
+            padding: 10px 16px;
         }
         .button_container{
-            margin: 20px;
+            margin: 10px 0;
             flex-direction: column;
             align-items: center;
         }

@@ -68,7 +68,8 @@ export default {
   }
 
   .cart_container ul{
-    width: 80%;
+    width: calc(100% - 32px);
+    max-width: 1000px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -78,8 +79,11 @@ export default {
   }
 
   .total{
-    width: 80%;
-    height: 100px;
+    width: calc(100% - 32px);
+    max-width: 1000px;
+    min-height: 100px;
+    padding: 16px;
+    text-align: center;
     display: flex;
     flex-direction: column;
     justify-content: center;

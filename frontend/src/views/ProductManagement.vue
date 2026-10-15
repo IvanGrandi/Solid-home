@@ -96,7 +96,7 @@
       </ul>
     </div>
 
-    <div v-if="editingProduct" class="edit_product">
+    <div v-if="editingProduct" ref="editForm" class="edit_product">
       <h3>Edit Product</h3>
       <hr />
       <form @submit.prevent="updateProduct">
@@ -226,6 +226,8 @@ export default {
     },
     editProduct(product) {
       this.editingProduct = { ...product };
+      // The form is below the product list; bring it into view (matters most on phones)
+      this.$nextTick(() => this.$refs.editForm?.scrollIntoView({ behavior: "smooth", block: "start" }));
     },
     async updateProduct() {
       try {
@@ -263,7 +265,8 @@ export default {
   .Form_div{
     padding: 30px;
     background-color: #243E36;
-    width: 60%;
+    width: calc(100% - 32px);
+    max-width: 700px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -283,7 +286,7 @@ export default {
     font-weight: bold;
     font-size: large;
   }
-  form input,form textarea{
+  form input,form textarea,form select{
     height: 30px;
     padding-left: 8px;
     border-radius: 5px;
@@ -320,7 +323,8 @@ export default {
   .list_of_products{
     margin-top: 30px;
     margin-bottom: 30px;
-    width: 80%;
+    width: calc(100% - 32px);
+    max-width: 1000px;
 
   }
   .product_container{
@@ -341,15 +345,20 @@ export default {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    width: 50%;
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .single_product img{
     width: 200px;
     height: auto;
+    flex-shrink: 0;
+    align-self: flex-start;
   }
   
   .single_product_buttons_box{
     width: 25%;
+    min-width: 140px;
     border-radius: 10px;
     display: flex;
     flex-direction: column;
@@ -375,7 +384,9 @@ export default {
   .edit_product {
   padding: 30px;
   background-color: grey;
-  width: 80%;
+  width: calc(100% - 32px);
+  max-width: 700px;
+  scroll-margin-top: 80px; /* Keep the heading clear of the fixed menu */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -401,7 +412,8 @@ export default {
 }
 
 .edit_product input,
-.edit_product textarea {
+.edit_product textarea,
+.edit_product select {
   height: 30px;
   padding-left: 8px;
   border-radius: 5px;
@@ -435,17 +447,28 @@ export default {
 
 
   @media (max-width: 800px){
+    .Form_div,
+    .edit_product{
+      padding: 20px;
+      border-radius: 20px;
+    }
     .single_product{
       flex-direction: column;
     }
     .single_product_buttons_box{
       margin-top: 10px;
       width: 100%;
+      flex-direction: row;
+      padding: 12px;
+    }
+    .single_product_buttons_box button{
+      flex: 1;
     }
     .single_product img{
-      
+      width: 100%;
+      max-width: 240px;
       margin: 0 auto;
-      text-align: center;
+      align-self: center;
     }
 
   }
