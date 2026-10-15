@@ -40,6 +40,7 @@ import ProductService from "../services/ProductService";
 import { store, findProduct, addToCart } from "../store";
 import { auth } from "../services/session";
 import { formatPrice } from "../utils";
+import { toast } from "../services/toast";
 
 export default {
   name: "IndividualProduct",
@@ -85,7 +86,7 @@ export default {
     },
     async submitRating() {
       if (!this.userRating) {
-        alert("Please select a rating before submitting.");
+        toast.info("Please select a rating before submitting.");
         return;
       }
       this.submitting = true;
@@ -93,8 +94,9 @@ export default {
         const updated = await ProductService.addRating(this.product.id, Number(this.userRating));
         this.product.ratings = updated.ratings; // Use the saved ratings from the server
         this.userRating = ""; // Reset user rating after submission
+        toast.success("Thanks for rating this product!");
       } catch (error) {
-        alert(error.response?.data?.message || "Could not submit your rating.");
+        toast.error(error.response?.data?.message || "Could not submit your rating.");
       } finally {
         this.submitting = false;
       }

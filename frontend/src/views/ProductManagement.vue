@@ -163,6 +163,7 @@
 import ProductService from "../services/ProductService";
 import { store, fetchProducts } from "../store";
 import { CATEGORIES, formatPrice } from "../utils";
+import { toast } from "../services/toast";
 
 const emptyProduct = () => ({
   product_name: "",
@@ -196,28 +197,31 @@ export default {
     async createProduct() {
       try {
         await ProductService.createProduct(this.newProduct);
+        toast.success(`"${this.newProduct.product_name}" was added.`);
         this.resetForm();
         await fetchProducts();
       } catch (error) {
-        alert(error.response?.data?.message || "Could not create the product.");
+        toast.error(error.response?.data?.message || "Could not create the product.");
       }
     },
     async deleteProduct(id) {
       if (!confirm("Delete this product?")) return;
       try {
         await ProductService.deleteProduct(id);
+        toast.success("Product deleted.");
         await fetchProducts();
       } catch (error) {
-        alert(error.response?.data?.message || "Could not delete the product.");
+        toast.error(error.response?.data?.message || "Could not delete the product.");
       }
     },
     async deleteAllProducts() {
       if (!confirm("Delete ALL products? This cannot be undone.")) return;
       try {
         await ProductService.deleteAllProducts();
+        toast.success("All products deleted.");
         await fetchProducts();
       } catch (error) {
-        alert(error.response?.data?.message || "Could not delete the products.");
+        toast.error(error.response?.data?.message || "Could not delete the products.");
       }
     },
     editProduct(product) {
@@ -226,10 +230,11 @@ export default {
     async updateProduct() {
       try {
         await ProductService.updateProduct(this.editingProduct.id, this.editingProduct);
+        toast.success("Product updated.");
         this.editingProduct = null;
         await fetchProducts();
       } catch (error) {
-        alert(error.response?.data?.message || "Could not update the product.");
+        toast.error(error.response?.data?.message || "Could not update the product.");
       }
     },
     resetForm() {

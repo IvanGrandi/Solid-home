@@ -1,5 +1,6 @@
 import { reactive, computed, watch } from "vue";
 import ProductService from "./services/ProductService";
+import { toast } from "./services/toast";
 
 const CART_KEY = "cart";
 
@@ -64,7 +65,7 @@ export function addToCart(product) {
   const inCart = entry ? entry.quantity : 0;
 
   if (inCart >= product.quantity_available) {
-    alert("There are no more products of this kind available");
+    toast.info("There are no more products of this kind available");
     return;
   }
 

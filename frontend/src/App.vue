@@ -2,11 +2,13 @@
     <User_menu />
     <router-view />
     <Footer_User />
+    <Toast_container />
   </template>
   
   <script>
   import User_menu from "./components/User_menu.vue";
   import Footer_User from "./components/Footer_User.vue";
+  import Toast_container from "./components/Toast_container.vue";
   import { fetchProducts } from "./store";
 
   // Products and the cart live in ./store.js, so views read them directly instead of through props
@@ -15,6 +17,7 @@
     components: {
       User_menu,
       Footer_User,
+      Toast_container,
     },
     mounted() {
       fetchProducts(); // Load products when the app loads

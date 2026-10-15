@@ -3,9 +3,10 @@
     <h1>Login</h1>
     <form class="auth-form" @submit.prevent="loginUser">
       <input
-        v-model="username"
-        type="text"
-        placeholder="Username"
+        v-model="email"
+        type="email"
+        placeholder="Email"
+        autocomplete="email"
         class="auth-input"
         required
       />
@@ -24,11 +25,12 @@
 <script>
 import apiClient from "../services/apiService";
 import { saveSession } from "../services/session";
+import { toast } from "../services/toast";
 
 export default {
   data() {
     return {
-      username: "",
+      email: "",
       password: "",
     };
   },
@@ -36,17 +38,17 @@ export default {
     async loginUser() {
       try {
         const response = await apiClient.post("/auth/login", {
-          username: this.username,
+          email: this.email,
           password: this.password,
         });
 
         // Blocked accounts are rejected by the server with a 403 and end up in the catch below
         const { accessToken, username } = response.data;
         saveSession(accessToken, username); // The menu updates reactively, no page reload needed
-        alert("Login successful!");
+        toast.success(`Welcome back, ${username}!`);
         this.$router.push("/"); // Redirect to home page
       } catch (error) {
-        alert(error.response?.data?.message || "Login failed!");
+        toast.error(error.response?.data?.message || "Login failed!");
       }
     },
   },

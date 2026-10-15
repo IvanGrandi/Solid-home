@@ -34,6 +34,8 @@
 
 <script>
 import apiClient from "../services/apiService";
+import { saveSession } from "../services/session";
+import { toast } from "../services/toast";
 
 export default {
   data() {
@@ -46,16 +48,20 @@ export default {
   methods: {
     async registerUser() {
       try {
-        await apiClient.post("/auth/register", {
+        const response = await apiClient.post("/auth/register", {
           username: this.username,
           email: this.email,
           password: this.password,
         });
-        alert("User registered successfully! You can now log in.");
-        this.$router.push("/login"); // Redirect to login page
+
+        // Registration returns a token, so the new user is logged in right away
+        const { accessToken, username } = response.data;
+        saveSession(accessToken, username);
+        toast.success(`Welcome, ${username}! Your account has been created.`);
+        this.$router.push("/"); // Redirect to home page
       } catch (error) {
         console.error("Registration failed:", error.response?.data?.message || error.message);
-        alert(error.response?.data?.message || "Registration failed!");
+        toast.error(error.response?.data?.message || "Registration failed!");
       }
     },
   },
